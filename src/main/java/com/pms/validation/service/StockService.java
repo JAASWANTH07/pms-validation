@@ -1,13 +1,15 @@
 package com.pms.validation.service;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.pms.validation.dao.StockDao;
 import com.pms.validation.entity.StockEntity;
+import com.pms.validation.enums.Sector;
+import com.pms.validation.exception.BadRequestException;
+import com.pms.validation.exception.ResourceNotFoundException;
 
 @Service
 public class StockService {
@@ -15,17 +17,26 @@ public class StockService {
     private StockDao stockDao;
 
     public List<StockEntity> getAllStockDetails() {
-      return stockDao.findAll();
+        return stockDao.findAll();
     }
 
-    public StockEntity getStockById(UUID stockId) {
+    public StockEntity getStockById(long stockId) {
         return stockDao.findById(stockId)
-                .orElseThrow(() -> new RuntimeException("Stock not found with id: " + stockId));
+                .orElseThrow(() -> new ResourceNotFoundException("Stock not found with id: " + stockId));
     }
 
-    public StockEntity getStockByCusipId(String cusipId) {
-        return stockDao.findByCusipId(cusipId)
-                .orElseThrow(() -> new RuntimeException("Stock not found with CUSIP ID: " + cusipId));
+    public StockEntity getStockBySymbol(String symbol) {
+        return stockDao.findBySymbol(symbol)
+                .orElseThrow(() -> new ResourceNotFoundException("Stock not found with Symbol: " + symbol));
+    }
+
+    public List<StockEntity> getStocksBySector(String sectorName) {
+        try {
+            Sector sector = Sector.valueOf(sectorName);
+            return stockDao.findBySectorName(sector);
+        } catch (IllegalArgumentException ex) {
+            throw new BadRequestException("Invalid sector: " + sectorName);
+        }
     }
 
     public StockEntity saveStock(StockEntity stockEntity) {

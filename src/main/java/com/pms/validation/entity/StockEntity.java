@@ -1,7 +1,5 @@
 package com.pms.validation.entity;
 
-import java.util.UUID;
-
 import com.pms.validation.enums.Sector;
 
 import jakarta.persistence.Column;

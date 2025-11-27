@@ -1,16 +1,18 @@
 package com.pms.validation.dao;
 
 import java.util.Optional;
-import java.util.UUID;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import com.pms.validation.entity.StockEntity;
+import com.pms.validation.enums.Sector;
+import java.util.List;
 
 @Repository
-public interface StockDao extends JpaRepository<StockEntity, UUID>{
+public interface StockDao extends JpaRepository<StockEntity, Long> {
 
-    public Optional<StockEntity> findByCusipId(String cusipId);
+    public Optional<StockEntity> findBySymbol(String symbol);
+
+    public List<StockEntity> findBySectorName(Sector sectorName);
 
 }
