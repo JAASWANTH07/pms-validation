@@ -1,0 +1,15 @@
+package com.pms.validation.enums;
+
+public enum Sector {
+    ENERGY,
+    MATERIALS,
+    INDUSTRIALS,
+    UTILITIES,
+    HEALTHCARE,
+    FINANCIALS,
+    CONSUMER_DISCRETIONARY,
+    CONSUMER_STAPLES,
+    INFORMATION_TECHNOLOGY,
+    COMMUNICATION_SERVICES,
+    REAL_ESTATE
+}
