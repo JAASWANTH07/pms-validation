@@ -1,13 +1,19 @@
 package com.pms.validation.entity;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
+import com.pms.validation.enums.Sector;
 import com.pms.validation.enums.TradeSide;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -22,30 +28,34 @@ import lombok.NoArgsConstructor;
 @Table(name = "validation_outbox")
 public class ValidationOutbox {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "validation_outbox_id")
+    private Long validationOutboxId;
+
     @Column(name = "trade_id")
     private UUID tradeId;
 
-    @Column(name = "cusip_id")
-    private String cusipId;
+    @Column(name = "portfolio_id")
+    private UUID portfolioId;
 
-    @Column(name = "cusip_name")
-    private String cusipName;
+    @Column(name = "symbol")
+    private String symbol;
 
     @Column(name = "sector_name")
-    private String sectorName;
+    private Sector sectorName;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "side")
     private TradeSide side;
 
     @Column(name = "price_per_stock")
-    private double pricePerStock;
+    private BigDecimal pricePerStock;
 
     @Column(name = "quantity")
     private long quantity;
 
     @Column(name = "timestamp")
-    private String timestamp;
+    private LocalDateTime timestamp;
 
     @Column(name = "status")
     private String status;
