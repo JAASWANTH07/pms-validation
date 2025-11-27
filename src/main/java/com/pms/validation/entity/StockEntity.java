@@ -2,8 +2,12 @@ package com.pms.validation.entity;
 
 import java.util.UUID;
 
+import com.pms.validation.enums.Sector;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -15,21 +19,18 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-
 @Entity
 @Table(name = "stocks")
 public class StockEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "stock_id")
-    private UUID stockId;
+    private Long stockId;
 
-    @Column(name = "cusip_id")
-    private String cusipId;
+    @Column(name = "symbol")
+    private String symbol;
 
-    @Column(name = "cusip_name")
-    private String cusipName;
-
+    @Enumerated(EnumType.STRING)
     @Column(name = "sector_name")
-    private String sectorName;
+    private Sector sectorName;
 }
