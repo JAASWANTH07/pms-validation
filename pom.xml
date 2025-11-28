@@ -9,9 +9,9 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.pms</groupId>
-	<artifactId>validation</artifactId>
+	<artifactId>pms-validation</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>validation</name>
+	<name>pms-validation</name>
 	<description>Validation Microservice of PMS - Portfolio Management System</description>
 	<url/>
 	<licenses>
