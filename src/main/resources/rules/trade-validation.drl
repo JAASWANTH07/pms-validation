@@ -1,0 +1,90 @@
+// Drools rules for Trade validation
+package com.pms.validation.rules;
+
+import com.pms.validation.dto.TradeDto;
+import com.pms.validation.dto.ValidationResult;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
+function void addError(ValidationResult res, String msg) {
+    if (res != null) {
+        res.addError(msg);
+    }
+}
+
+function boolean isBlank(String s) {
+    return s == null || s.trim().length() == 0;
+}
+
+rule "Trade - required fields"
+    when
+        $t : TradeDto()
+        $r : ValidationResult()
+        eval($t != null)
+    then
+        if ($t.getTradeId() == null) addError($r, "tradeId is required");
+        if ($t.getPortfolioId() == null) addError($r, "portfolioId is required");
+        if (isBlank($t.getSymbol())) addError($r, "symbol is required");
+end
+
+rule "Trade - price must be positive"
+    when
+        $t : TradeDto( pricePerStock != null )
+        $r : ValidationResult()
+    then
+        if ($t.getPricePerStock().compareTo(BigDecimal.ZERO) <= 0) {
+            addError($r, "pricePerStock must be greater than 0");
+        }
+end
+
+rule "Trade - quantity must be positive"
+    when
+        $t : TradeDto( quantity != null )
+        $r : ValidationResult()
+    then
+        if ($t.getQuantity() == null || $t.getQuantity() <= 0) {
+            addError($r, "quantity must be greater than 0");
+        }
+        if ($t.getQuantity() != null && $t.getQuantity() > 1000000L) {
+            addError($r, "quantity exceeds maximum allowed per trade (1,000,000)");
+        }
+end
+
+rule "Trade - timestamp sanity"
+    when
+        $t : TradeDto( timestamp != null )
+        $r : ValidationResult()
+    then
+        if ($t.getTimestamp().isAfter(LocalDateTime.now())) {
+            addError($r, "timestamp cannot be in the future");
+        }
+end
+
+rule "Trade - side validation"
+    when
+        $t : TradeDto( side == null )
+        $r : ValidationResult()
+    then
+        addError($r, "side must be provided (BUY or SELL)");
+end
+
+rule "Trade - symbol basic format"
+    when
+        $t : TradeDto( symbol != null )
+        $r : ValidationResult()
+    then
+        String s = $t.getSymbol();
+        if (s.length() < 1 || s.length() > 10) {
+            addError($r, "symbol length must be between 1 and 10 characters");
+        }
+end
+
+rule "Trade - high price flag"
+    when
+        $t : TradeDto( pricePerStock != null )
+        $r : ValidationResult()
+    then
+        if ($t.getPricePerStock().compareTo(new BigDecimal("1000000")) >= 0) {
+            addError($r, "pricePerStock unusually high - requires review");
+        }
+end
