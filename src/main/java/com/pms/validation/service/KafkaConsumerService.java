@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pms.validation.dto.IngestionEventDto;
 import com.pms.validation.dto.TradeDto;
 import com.pms.validation.dto.ValidationOutputDto;
-import com.pms.validation.dto.ValidationResult;
+import com.pms.validation.dto.ValidationResultDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -41,22 +41,23 @@ public class KafkaConsumerService {
         try {
             IngestionEventDto ingestionEvent = mapper.readValue(payload, IngestionEventDto.class);
 
-            if (idempotencyService.isAlreadyProcessed(ingestionEvent.getEventId())) {
-                logger.info("Ignoring duplicate event: " + ingestionEvent.getEventId());
+            TradeDto trade = mapper.readValue(ingestionEvent.getPayloadBytes(), TradeDto.class);
+
+            // idempotency based on tradeId inside payload
+            if (idempotencyService.isAlreadyProcessed(trade.getTradeId())) {
+                logger.info("Ignoring duplicate trade: " + trade.getTradeId());
                 return;
             }
-
-            TradeDto trade = mapper.readValue(ingestionEvent.getPayloadBytes(), TradeDto.class);
 
             logger.info("Processing trade from ingestion: " + trade.getTradeId());
 
-            if (!idempotencyService.markAsProcessed(ingestionEvent.getEventId(), "ingestion-topic")) {
+            if (!idempotencyService.markAsProcessed(trade.getTradeId(), "ingestion-topic")) {
                 logger.warning(
-                        "Failed to mark event as processed (possible duplicate): " + ingestionEvent.getEventId());
+                        "Failed to mark trade as processed (possible duplicate): " + trade.getTradeId());
                 return;
             }
 
-            ValidationResult result = tradeValidationService.validateTrade(trade);
+            ValidationResultDto result = tradeValidationService.validateTrade(trade);
 
             ValidationOutputDto validationEvent = outboxService.buildValidationEvent(trade, result);
 

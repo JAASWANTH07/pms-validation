@@ -63,11 +63,11 @@ public class IngestionListenerTest {
 
         String payload = mapper.writeValueAsString(ingestionEvent);
 
-        when(idempotencyService.isAlreadyProcessed(eventId)).thenReturn(true);
+        when(idempotencyService.isAlreadyProcessed(trade.getTradeId())).thenReturn(true);
 
         ingestionListener.onMessage(payload, 0, 0L);
 
-        verify(idempotencyService).isAlreadyProcessed(eventId);
+        verify(idempotencyService).isAlreadyProcessed(trade.getTradeId());
         verifyNoInteractions(ingestionProcessor);
     }
 
@@ -92,7 +92,7 @@ public class IngestionListenerTest {
 
         String payload = mapper.writeValueAsString(ingestionEvent);
 
-        when(idempotencyService.isAlreadyProcessed(eventId)).thenReturn(false);
+        when(idempotencyService.isAlreadyProcessed(trade.getTradeId())).thenReturn(false);
 
         ingestionListener.onMessage(payload, 0, 0L);
 

@@ -19,8 +19,8 @@ public class ProcessedMessage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "event_id", nullable = false)
-    private UUID eventId;
+    @Column(name = "trade_id", nullable = false)
+    private UUID tradeId;
 
     @Column(name = "consumer_group", nullable = false)
     private String consumerGroup;
@@ -31,8 +31,8 @@ public class ProcessedMessage {
     @Column(name = "processed_at", nullable = false)
     private LocalDateTime processedAt;
 
-    public ProcessedMessage(UUID eventId, String consumerGroup, String topic) {
-        this.eventId = eventId;
+    public ProcessedMessage(UUID tradeId, String consumerGroup, String topic) {
+        this.tradeId = tradeId;
         this.consumerGroup = consumerGroup;
         this.topic = topic;
         this.processedAt = LocalDateTime.now();

@@ -32,13 +32,14 @@ public class IngestionListener {
         try {
             IngestionEventDto ingestionEvent = mapper.readValue(payload, IngestionEventDto.class);
 
-            // Fast check to avoid deserialization/processing if already handled
-            if (idempotencyService.isAlreadyProcessed(ingestionEvent.getEventId())) {
-                logger.info("Ignoring duplicate event: " + ingestionEvent.getEventId());
+            // Deserialize payload to obtain tradeId for idempotency check
+            TradeDto trade = mapper.readValue(ingestionEvent.getPayloadBytes(), TradeDto.class);
+
+            // Fast check to avoid processing if trade already handled
+            if (idempotencyService.isAlreadyProcessed(trade.getTradeId())) {
+                logger.info("Ignoring duplicate trade: " + trade.getTradeId());
                 return;
             }
-
-            TradeDto trade = mapper.readValue(ingestionEvent.getPayloadBytes(), TradeDto.class);
 
             logger.info("Delegating trade " + trade.getTradeId() + " to processor");
 
