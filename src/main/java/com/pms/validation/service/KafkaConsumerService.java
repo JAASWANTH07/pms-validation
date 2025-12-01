@@ -1,43 +1,59 @@
 package com.pms.validation.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.pms.validation.dto.OutboxEventDto;
+import com.pms.validation.dto.TradeDto;
+import com.pms.validation.dto.ValidationEventDto;
+import com.pms.validation.dto.ValidationResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
-import com.pms.validation.entity.ValidationOutbox;
-
-
+import java.util.logging.Logger;
 
 @Service
 public class KafkaConsumerService {
 
+    private static final Logger logger = Logger.getLogger(KafkaConsumerService.class.getName());
+
     @Autowired
-    private ValidationOutboxService validationOutboxService;
+    private ValidationService validationService;
 
-    @KafkaListener(topics = "ingestion-topic",groupId = "ingestion-consumer-group")
-    public void processIngestionMessage(ValidationOutbox ingestionTrade,
-        @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
-        @Header(KafkaHeaders.OFFSET) Long offset 
-    ) {
-        System.out.println("Received from partition: " + partition);
-        System.out.println("Offset: " + offset);
+    @Autowired
+    private ValidationOutboxService outboxService;
 
-        System.out.println("Consumed trade from Kafka: " + ingestionTrade);
+    @Autowired
+    private KafkaTemplate<String, ValidationEventDto> kafkaTemplate;
 
-        validationOutboxService.validateTrade(ingestionTrade);
+    @Autowired
+    private ObjectMapper mapper;
+
+    @KafkaListener(topics = "ingestion-topic", groupId = "validation-consumer-group")
+    public void processIngestionMessage(String payload,
+            @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
+            @Header(KafkaHeaders.OFFSET) Long offset) {
+        try {
+            OutboxEventDto ingestionEvent = mapper.readValue(payload, OutboxEventDto.class);
+            TradeDto trade = mapper.readValue(ingestionEvent.getPayloadBytes(), TradeDto.class);
+
+            logger.info("Processing trade from ingestion: " + trade.getTradeId());
+
+            ValidationResult result = validationService.validateOutbox(ingestionEvent);
+
+            ValidationEventDto validationEvent = outboxService.buildValidationEvent(trade, result);
+
+            String topic = result.isValid() ? "validation-topic" : "validation-dlq";
+            outboxService.saveValidationEvent(trade, result, result.isValid() ? "SUCCESS" : "FAILED");
+
+            kafkaTemplate.send(topic, validationEvent.getTradeId().toString(), validationEvent);
+            logger.info("Sent validation event to " + topic + " for trade: " + trade.getTradeId());
+
+        } catch (Exception ex) {
+            logger.severe("Error processing ingestion message: " + ex.getMessage());
+            ex.printStackTrace();
+        }
     }
-
-    @KafkaListener(topics = "validation-topic",groupId = "validation-consumer-group")
-    public void processValidationMessage(ValidationOutbox validatedTrade,
-        @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
-        @Header(KafkaHeaders.OFFSET) Long offset 
-    ) {
-        System.out.println("Received from partition: " + partition);
-        System.out.println("Offset: " + offset);
-        System.out.println("Consumed trade from Kafka: " + validatedTrade);
-    }
-
-
 }

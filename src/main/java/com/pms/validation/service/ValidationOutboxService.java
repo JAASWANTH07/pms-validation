@@ -1,63 +1,59 @@
 package com.pms.validation.service;
 
-import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.stereotype.Service;
-
-import com.pms.validation.dao.ValidationOutboxDao;
+import com.pms.validation.dao.ValidationOutboxRepository;
+import com.pms.validation.dto.TradeDto;
+import com.pms.validation.dto.ValidationEventDto;
+import com.pms.validation.dto.ValidationResult;
 import com.pms.validation.entity.ValidationOutbox;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class ValidationOutboxService {
 
     @Autowired
-    private RedisTemplate<String, UUID> redisTemplate;
+    private ValidationOutboxRepository repository;
 
-    @Autowired
-    private KafkaTemplate<String, ValidationOutbox> kafkaTemplate;
+    @Transactional
+    public ValidationOutbox saveValidationEvent(TradeDto trade, ValidationResult result, String status) {
+        ValidationOutbox outbox = new ValidationOutbox();
+        outbox.setTradeId(trade.getTradeId());
+        outbox.setPortfolioId(trade.getPortfolioId());
+        outbox.setSymbol(trade.getSymbol());
+        outbox.setSectorName(null);
+        outbox.setSide(trade.getSide());
+        outbox.setPricePerStock(trade.getPricePerStock());
+        outbox.setQuantity(trade.getQuantity());
+        outbox.setTimestamp(trade.getTimestamp());
+        outbox.setStatus(status);
+        outbox.setCreatedAt(LocalDateTime.now());
+        outbox.setUpdatedAt(LocalDateTime.now());
 
-    @Autowired
-    private ValidationOutboxDao validationOutboxDao;
-
-    private static final String TRADE_SET = "ProcessedTrades";
-    
-    public void validateTrade(ValidationOutbox validationOutbox) {
-
-        if(isDuplicateTrade(validationOutbox.getTradeId()))
-        {
-            System.out.println("Duplicate trade detected: " + validationOutbox.getTradeId());
-            return;
-        }
-
-        validationOutbox.setStatus("PENDING");
-
-        ValidationOutbox savedOutbox = validationOutboxDao.save(validationOutbox);
-
-        System.out.println("Saved to DB: " + savedOutbox);
-
-        kafkaTemplate.send("validation-topic",savedOutbox.getPortfolioId().toString(), savedOutbox);
-            // .addCallback(success -> {
-            //     System.out.println("Published to Kafka: " + savedOutbox);
-                
-            // },
-            // failure -> {
-            
-            // });
-
+        return repository.save(outbox);
     }
 
-    public boolean isDuplicateTrade(UUID tradeId) {
+    public ValidationEventDto buildValidationEvent(TradeDto trade, ValidationResult result) {
+        String status = result.isValid() ? "SUCCESS" : "FAILED";
+        String errors = result.getErrors().isEmpty() ? null
+                : result.getErrors().stream().collect(Collectors.joining("; "));
 
-        boolean exists = redisTemplate.opsForSet().isMember(TRADE_SET, tradeId);
-
-        if (exists) {
-            return true;
-        }
-
-        redisTemplate.opsForSet().add(TRADE_SET, tradeId);
-        return false;
+        return ValidationEventDto.builder()
+                .eventId(UUID.randomUUID())
+                .tradeId(trade.getTradeId())
+                .portfolioId(trade.getPortfolioId())
+                .symbol(trade.getSymbol())
+                .side(trade.getSide())
+                .pricePerStock(trade.getPricePerStock().toPlainString())
+                .quantity(trade.getQuantity())
+                .tradeTimestamp(trade.getTimestamp())
+                .validationStatus(status)
+                .validationErrors(errors)
+                .processedAt(LocalDateTime.now())
+                .build();
     }
 }
