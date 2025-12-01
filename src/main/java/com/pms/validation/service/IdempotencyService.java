@@ -3,6 +3,7 @@ package com.pms.validation.service;
 import com.pms.validation.dao.ProcessedMessageRepository;
 import com.pms.validation.entity.ProcessedMessage;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,7 +14,9 @@ import java.util.logging.Logger;
 public class IdempotencyService {
 
     private static final Logger logger = Logger.getLogger(IdempotencyService.class.getName());
-    private static final String CONSUMER_GROUP = "validation-consumer-group";
+
+    @Value("${spring.kafka.consumer.group-id}")
+    private String consumerGroup;
 
     @Autowired
     private ProcessedMessageRepository repository;
@@ -21,7 +24,7 @@ public class IdempotencyService {
     @Transactional
     public boolean markAsProcessed(UUID eventId, String topic) {
         try {
-            ProcessedMessage message = new ProcessedMessage(eventId, CONSUMER_GROUP, topic);
+            ProcessedMessage message = new ProcessedMessage(eventId, consumerGroup, topic);
             repository.save(message);
             logger.info("Marked event " + eventId + " as processed");
             return true;
@@ -32,6 +35,6 @@ public class IdempotencyService {
     }
 
     public boolean isAlreadyProcessed(UUID eventId) {
-        return repository.existsByEventIdAndConsumerGroup(eventId, CONSUMER_GROUP);
+        return repository.existsByEventIdAndConsumerGroup(eventId, consumerGroup);
     }
 }

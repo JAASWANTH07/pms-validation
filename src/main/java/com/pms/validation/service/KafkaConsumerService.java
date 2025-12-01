@@ -34,7 +34,7 @@ public class KafkaConsumerService {
     @Autowired
     private ObjectMapper mapper;
 
-    @KafkaListener(topics = "ingestion-topic", groupId = "validation-consumer-group")
+    @KafkaListener(topics = "ingestion-topic", groupId = "${spring.kafka.consumer.group-id}")
     public void processIngestionMessage(String payload,
             @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
             @Header(KafkaHeaders.OFFSET) Long offset) {
@@ -56,7 +56,7 @@ public class KafkaConsumerService {
                 return;
             }
 
-            ValidationResult result = validationService.validateOutbox(ingestionEvent);
+            ValidationResult result = validationService.validateTrade(trade);
 
             ValidationEventDto validationEvent = outboxService.buildValidationEvent(trade, result);
 

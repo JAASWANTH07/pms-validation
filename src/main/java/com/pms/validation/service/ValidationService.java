@@ -1,7 +1,5 @@
 package com.pms.validation.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.pms.validation.dto.OutboxEventDto;
 import com.pms.validation.dto.TradeDto;
 import com.pms.validation.dto.ValidationResult;
 import org.kie.api.runtime.KieContainer;
@@ -10,18 +8,14 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class ValidationService {
-
-    private final ObjectMapper mapper = new ObjectMapper();
     private final KieContainer kieContainer;
 
     public ValidationService(KieContainer kieContainer) {
         this.kieContainer = kieContainer;
     }
 
-    public ValidationResult validateOutbox(OutboxEventDto outbox) {
+    public ValidationResult validateTrade(TradeDto trade) {
         try {
-            TradeDto trade = mapper.readValue(outbox.getPayloadBytes(), TradeDto.class);
-
             ValidationResult result = new ValidationResult();
 
             KieSession kieSession = kieContainer.newKieSession();
