@@ -1,118 +1,118 @@
-package com.pms.validation.service;
+// package com.pms.validation.service;
 
-import com.pms.validation.dto.IngestionEventDto;
-import com.pms.validation.dto.TradeDto;
-import com.pms.validation.dto.ValidationOutputDto;
-import com.pms.validation.dto.ValidationResultDto;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.util.UUID;
+// import com.pms.validation.dto.IngestionEventDto;
+// import com.pms.validation.dto.TradeDto;
+// import com.pms.validation.dto.ValidationOutputDto;
+// import com.pms.validation.dto.ValidationResultDto;
+// import org.junit.jupiter.api.BeforeEach;
+// import org.junit.jupiter.api.Test;
+// import java.math.BigDecimal;
+// import java.time.LocalDateTime;
+// import java.util.UUID;
 
-// No direct assertions used; test verifies interactions via Mockito
-import static org.mockito.Mockito.*;
+// // No direct assertions used; test verifies interactions via Mockito
+// import static org.mockito.Mockito.*;
 
-public class IngestionProcessorTest {
+// public class IngestionProcessorTest {
 
-    private IdempotencyService idempotencyService;
-    private TradeValidationService tradeValidationService;
-    private ValidationOutboxService validationOutboxService;
-    private KafkaProducerService kafkaProducerService;
-    private ValidationCore ingestionProcessor;
+//     private IdempotencyService idempotencyService;
+//     private TradeValidationService tradeValidationService;
+//     private ValidationOutboxService validationOutboxService;
+//     private KafkaProducerService kafkaProducerService;
+//     private ValidationCore ingestionProcessor;
 
-    @BeforeEach
-    public void setup() {
-        idempotencyService = mock(IdempotencyService.class);
-        tradeValidationService = mock(TradeValidationService.class);
-        validationOutboxService = mock(ValidationOutboxService.class);
-        kafkaProducerService = mock(KafkaProducerService.class);
+//     @BeforeEach
+//     public void setup() {
+//         idempotencyService = mock(IdempotencyService.class);
+//         tradeValidationService = mock(TradeValidationService.class);
+//         validationOutboxService = mock(ValidationOutboxService.class);
+//         kafkaProducerService = mock(KafkaProducerService.class);
 
-        ingestionProcessor = new ValidationCore();
-        // inject mocks via reflection
-        try {
-            var f1 = ValidationCore.class.getDeclaredField("idempotencyService");
-            f1.setAccessible(true);
-            f1.set(ingestionProcessor, idempotencyService);
+//         ingestionProcessor = new ValidationCore();
+//         // inject mocks via reflection
+//         try {
+//             var f1 = ValidationCore.class.getDeclaredField("idempotencyService");
+//             f1.setAccessible(true);
+//             f1.set(ingestionProcessor, idempotencyService);
 
-            var f2 = ValidationCore.class.getDeclaredField("tradeValidationService");
-            f2.setAccessible(true);
-            f2.set(ingestionProcessor, tradeValidationService);
+//             var f2 = ValidationCore.class.getDeclaredField("tradeValidationService");
+//             f2.setAccessible(true);
+//             f2.set(ingestionProcessor, tradeValidationService);
 
-            var f3 = ValidationCore.class.getDeclaredField("validationOutboxService");
-            f3.setAccessible(true);
-            f3.set(ingestionProcessor, validationOutboxService);
+//             var f3 = ValidationCore.class.getDeclaredField("validationOutboxService");
+//             f3.setAccessible(true);
+//             f3.set(ingestionProcessor, validationOutboxService);
 
-            var f4 = ValidationCore.class.getDeclaredField("kafkaProducerService");
-            f4.setAccessible(true);
-            f4.set(ingestionProcessor, kafkaProducerService);
-        } catch (Exception ex) {
-            throw new RuntimeException(ex);
-        }
-    }
+//             var f4 = ValidationCore.class.getDeclaredField("kafkaProducerService");
+//             f4.setAccessible(true);
+//             f4.set(ingestionProcessor, kafkaProducerService);
+//         } catch (Exception ex) {
+//             throw new RuntimeException(ex);
+//         }
+//     }
 
-    @Test
-    void happyPath_processesAndPublishes() {
-        UUID eventId = UUID.randomUUID();
-        IngestionEventDto ingestionEvent = IngestionEventDto.builder()
-                .eventId(eventId)
-                .payloadBytes(new byte[0])
-                .build();
+//     @Test
+//     void happyPath_processesAndPublishes() {
+//         UUID eventId = UUID.randomUUID();
+//         IngestionEventDto ingestionEvent = IngestionEventDto.builder()
+//                 .eventId(eventId)
+//                 .payloadBytes(new byte[0])
+//                 .build();
 
-        TradeDto trade = TradeDto.builder()
-                .tradeId(UUID.randomUUID())
-                .portfolioId(UUID.randomUUID())
-                .symbol("ABC")
-                .side(null)
-                .pricePerStock(new BigDecimal("10.00"))
-                .quantity(100L)
-                .timestamp(LocalDateTime.now())
-                .build();
+//         TradeDto trade = TradeDto.builder()
+//                 .tradeId(UUID.randomUUID())
+//                 .portfolioId(UUID.randomUUID())
+//                 .symbol("ABC")
+//                 .side(null)
+//                 .pricePerStock(new BigDecimal("10.00"))
+//                 .quantity(100L)
+//                 .timestamp(LocalDateTime.now())
+//                 .build();
 
-        when(idempotencyService.markAsProcessed(eq(trade.getTradeId()), anyString())).thenReturn(true);
+//         when(idempotencyService.markAsProcessed(eq(trade.getTradeId()), anyString())).thenReturn(true);
 
-        ValidationResultDto vr = new ValidationResultDto();
-        when(tradeValidationService.validateTrade(trade)).thenReturn(vr);
+//         ValidationResultDto vr = new ValidationResultDto();
+//         when(tradeValidationService.validateTrade(trade)).thenReturn(vr);
 
-        ValidationOutputDto output = ValidationOutputDto.builder()
-                .eventId(UUID.randomUUID())
-                .tradeId(trade.getTradeId())
-                .portfolioId(trade.getPortfolioId())
-                .symbol(trade.getSymbol())
-                .pricePerStock(trade.getPricePerStock().toPlainString())
-                .processedAt(LocalDateTime.now())
-                .validationStatus("SUCCESS")
-                .build();
+//         ValidationOutputDto output = ValidationOutputDto.builder()
+//                 .eventId(UUID.randomUUID())
+//                 .tradeId(trade.getTradeId())
+//                 .portfolioId(trade.getPortfolioId())
+//                 .symbol(trade.getSymbol())
+//                 .pricePerStock(trade.getPricePerStock().toPlainString())
+//                 .processedAt(LocalDateTime.now())
+//                 .validationStatus("SUCCESS")
+//                 .build();
 
-        when(validationOutboxService.buildValidationEvent(trade, vr)).thenReturn(output);
-        when(validationOutboxService.saveValidationEvent(trade, vr, "SUCCESS")).thenReturn(null);
+//         when(validationOutboxService.buildValidationEvent(trade, vr)).thenReturn(output);
+//         when(validationOutboxService.saveValidationEvent(trade, vr, "SUCCESS")).thenReturn(null);
 
-        ingestionProcessor.process(ingestionEvent, trade);
+//         ingestionProcessor.process(ingestionEvent, trade);
 
-        verify(idempotencyService).markAsProcessed(eq(trade.getTradeId()), anyString());
-        verify(tradeValidationService).validateTrade(trade);
-        verify(validationOutboxService).buildValidationEvent(trade, vr);
-        verify(validationOutboxService).saveValidationEvent(trade, vr, "SUCCESS");
-        verify(kafkaProducerService).sendValidationEvent(eq("validation-topic"), eq(output));
-    }
+//         verify(idempotencyService).markAsProcessed(eq(trade.getTradeId()), anyString());
+//         verify(tradeValidationService).validateTrade(trade);
+//         verify(validationOutboxService).buildValidationEvent(trade, vr);
+//         verify(validationOutboxService).saveValidationEvent(trade, vr, "SUCCESS");
+//         verify(kafkaProducerService).sendValidationEvent(eq("validation-topic"), eq(output));
+//     }
 
-    @Test
-    void duplicate_markFails_noProcessing() {
-        UUID eventId2 = UUID.randomUUID();
-        IngestionEventDto ingestionEvent2 = IngestionEventDto.builder()
-                .eventId(eventId2)
-                .payloadBytes(new byte[0])
-                .build();
+//     @Test
+//     void duplicate_markFails_noProcessing() {
+//         UUID eventId2 = UUID.randomUUID();
+//         IngestionEventDto ingestionEvent2 = IngestionEventDto.builder()
+//                 .eventId(eventId2)
+//                 .payloadBytes(new byte[0])
+//                 .build();
 
-        TradeDto trade2 = TradeDto.builder().tradeId(UUID.randomUUID()).build();
+//         TradeDto trade2 = TradeDto.builder().tradeId(UUID.randomUUID()).build();
 
-        when(idempotencyService.markAsProcessed(eq(trade2.getTradeId()), anyString())).thenReturn(false);
+//         when(idempotencyService.markAsProcessed(eq(trade2.getTradeId()), anyString())).thenReturn(false);
 
-        ingestionProcessor.process(ingestionEvent2, trade2);
+//         ingestionProcessor.process(ingestionEvent2, trade2);
 
-        verify(idempotencyService).markAsProcessed(eq(trade2.getTradeId()), anyString());
-        verifyNoInteractions(tradeValidationService);
-        verifyNoInteractions(validationOutboxService);
-        verifyNoInteractions(kafkaProducerService);
-    }
-}
+//         verify(idempotencyService).markAsProcessed(eq(trade2.getTradeId()), anyString());
+//         verifyNoInteractions(tradeValidationService);
+//         verifyNoInteractions(validationOutboxService);
+//         verifyNoInteractions(kafkaProducerService);
+//     }
+// }

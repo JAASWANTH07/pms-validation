@@ -1,20 +1,22 @@
 package com.pms.validation.service;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+import java.util.logging.Logger;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pms.validation.dto.IngestionEventDto;
 import com.pms.validation.dto.TradeDto;
 import com.pms.validation.dto.ValidationResultDto;
 import com.pms.validation.entity.ValidationOutboxEntity;
 import com.pms.validation.repository.ValidationOutboxRepository;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
@@ -22,6 +24,7 @@ public class ValidationCore {
 
     private static final Logger logger = Logger.getLogger(KafkaConsumerService.class.getName());
 
+    @Autowired
     private ObjectMapper mapper;
 
     @Autowired
@@ -44,7 +47,8 @@ public class ValidationCore {
         }
 
         ValidationResultDto result = tradeValidationService.validateTrade(trade);
-        String status = result.isValid() ? "SUCCESS" : "FAILED";
+        
+        String status = result.isValid() ? "VALID" : "INVALID";
         String errors = result.getErrors().isEmpty() ? null
                 : result.getErrors().stream().collect(Collectors.joining("; "));
 
@@ -68,9 +72,8 @@ public class ValidationCore {
         return true;
     }
 
-    public void processInfo(IngestionEventDto ingestionEvent) {
+    public void processInfo(TradeDto trade) {
         try {
-            TradeDto trade = mapper.readValue(ingestionEvent.getPayloadBytes(), TradeDto.class);
 
             if (idempotencyService.isAlreadyProcessed(trade.getTradeId())) {
                 logger.info("Ignoring duplicate trade: " + trade.getTradeId());

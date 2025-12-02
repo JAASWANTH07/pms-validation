@@ -1,14 +1,16 @@
 package com.pms.validation.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.pms.validation.dto.IngestionEventDto;
+import java.util.logging.Logger;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Service;
 
-import java.util.logging.Logger;
+import com.pms.validation.dto.TradeDto;
+import com.pms.validation.mapper.ProtoDTOMapper;
+import com.pms.validation.proto.TradeEventProto;
 
 @Service
 public class KafkaConsumerService {
@@ -18,17 +20,48 @@ public class KafkaConsumerService {
     @Autowired
     private ValidationCore validationCore;
 
-    private ObjectMapper mapper;
+    @Autowired
+    private ProtoDTOMapper protoDTOMapper;
 
-    @KafkaListener(topics = "ingestion-topic", groupId = "${spring.kafka.consumer.group-id}")
-    public void onMessage(String payload,
+    @KafkaListener(
+    topics = "ingestion-topic",
+    groupId = "${spring.kafka.consumer.group-id}",
+    containerFactory = "jsonKafkaListenerContainerFactory"
+    )
+    public void onIngestionMessage(TradeDto tradeDto,
             @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
             @Header(KafkaHeaders.OFFSET) Long offset) {
         try {
-            IngestionEventDto ingestionEvent = mapper.readValue(payload, IngestionEventDto.class);
-            validationCore.processInfo(ingestionEvent);
+            System.out.println("Received message from partition " + partition);
+            System.out.println("Offset: " + offset);
+
+            // TradeDto tradeDto = protoDTOMapper.toDto(tradeMessage);
+
+            validationCore.processInfo(tradeDto);
+
         } catch (Exception ex) {
             logger.severe("Error in IngestionListener.onMessage: " + ex.getMessage());
+            ex.printStackTrace();
+        }
+    }
+
+    @KafkaListener(
+    topics = "validation-topic",
+    groupId = "pms-core-consumer-group",
+    containerFactory = "protobufKafkaListenerContainerFactory"
+    )
+    public void onValidationMessage(byte[] payload,
+            @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
+            @Header(KafkaHeaders.OFFSET) Long offset) {
+        try {
+            System.out.println("Received message from partition " + partition);
+            System.out.println("Offset: " + offset);
+
+            TradeEventProto validatedTrade = TradeEventProto.parseFrom(payload);
+
+            System.out.println("Payload: " + validatedTrade);
+        } catch (Exception ex) {
+            logger.severe("Error in ValidationListener.onMessage: " + ex.getMessage());
             ex.printStackTrace();
         }
     }
