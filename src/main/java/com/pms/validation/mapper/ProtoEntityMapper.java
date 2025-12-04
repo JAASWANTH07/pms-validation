@@ -19,37 +19,30 @@ public class ProtoEntityMapper {
 
         TradeEventProto.Builder builder = TradeEventProto.newBuilder();
 
-        // portfolioId
         if (entity.getPortfolioId() != null) {
             builder.setPortfolioId(entity.getPortfolioId().toString());
         }
 
-        // tradeId
         if (entity.getTradeId() != null) {
             builder.setTradeId(entity.getTradeId().toString());
         }
 
-        // symbol
         if (entity.getSymbol() != null) {
             builder.setSymbol(entity.getSymbol());
         }
 
-        // side enum
         if (entity.getSide() != null) {
             builder.setSide(entity.getSide().name());
         }
 
-        // price per stock
         if (entity.getPricePerStock() != null) {
             builder.setPricePerStock(entity.getPricePerStock().doubleValue());
         }
 
-        // quantity
         if (entity.getQuantity() != null) {
             builder.setQuantity(entity.getQuantity());
         }
 
-        // timestamp
         if (entity.getTradeTimestamp() != null) {
             builder.setTimestamp(convertLocalDateTime(entity.getTradeTimestamp()));
         }
