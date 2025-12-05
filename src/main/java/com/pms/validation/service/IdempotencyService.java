@@ -33,7 +33,7 @@ public class IdempotencyService {
             throw ex;
         } catch (Exception ex) {
             log.warn("Trade " + tradeId + " already processed or constraint violation: " + ex.getMessage());
-            throw ex;
+            throw new RuntimeException("Error while marking the trade as processed: ", ex);
         }
     }
 

@@ -37,63 +37,55 @@ public class ValidationCore {
     // Atomic DB transaction: idempotency table insert + validate + outbox write.
     @Transactional
     public void handleTransaction(TradeDto trade) {
-        try {
-           
-            idempotencyService.markAsProcessed(trade.getTradeId(), "ingestion-topic");
 
-            ValidationResultDto result = tradeValidationService.validateTrade(trade);
+        idempotencyService.markAsProcessed(trade.getTradeId(), "ingestion-topic");
 
-            String status = result.isValid() ? "VALID" : "INVALID";
-            String errors = result.getErrors().isEmpty() ? null
-                    : result.getErrors().stream().collect(Collectors.joining("; "));
+        ValidationResultDto result = tradeValidationService.validateTrade(trade);
 
-            if (status.equals("VALID")) {
-                log.info("Trade {} is valid.", trade.getTradeId());
+        String status = result.isValid() ? "VALID" : "INVALID";
+        String errors = result.getErrors().isEmpty() ? null
+                : result.getErrors().stream().collect(Collectors.joining("; "));
 
-                ValidationOutboxEntity outbox = ValidationOutboxEntity.builder()
-                        .eventId(UUID.randomUUID())
-                        .tradeId(trade.getTradeId())
-                        .portfolioId(trade.getPortfolioId())
-                        .symbol(trade.getSymbol())
-                        .side(trade.getSide())
-                        .pricePerStock(trade.getPricePerStock())
-                        .quantity(trade.getQuantity())
-                        .tradeTimestamp(trade.getTimestamp())
-                        .sentStatus("PENDING") // Outbox message Status
-                        .validationStatus(status)
-                        .validationErrors(null)
-                        .build();
+        if (status.equals("VALID")) {
+            log.info("Trade {} is valid.", trade.getTradeId());
 
-                outboxRepo.save(outbox);
-            } else {
-                log.info("Trade {} is invalid: {}", trade.getTradeId(), errors);
+            ValidationOutboxEntity outbox = ValidationOutboxEntity.builder()
+                    .eventId(UUID.randomUUID())
+                    .tradeId(trade.getTradeId())
+                    .portfolioId(trade.getPortfolioId())
+                    .symbol(trade.getSymbol())
+                    .side(trade.getSide())
+                    .pricePerStock(trade.getPricePerStock())
+                    .quantity(trade.getQuantity())
+                    .tradeTimestamp(trade.getTimestamp())
+                    .sentStatus("PENDING") // Outbox message Status
+                    .validationStatus(status)
+                    .validationErrors(null)
+                    .build();
 
-                InvalidTradeEntity invalidTrade = InvalidTradeEntity.builder()
-                        .eventId(UUID.randomUUID())
-                        .tradeId(trade.getTradeId())
-                        .portfolioId(trade.getPortfolioId())
-                        .symbol(trade.getSymbol())
-                        .side(trade.getSide())
-                        .pricePerStock(trade.getPricePerStock())
-                        .quantity(trade.getQuantity())
-                        .tradeTimestamp(trade.getTimestamp())
-                        .sentStatus("PENDING")
-                        .validationStatus(status)
-                        .validationErrors(errors)
-                        .build();
+            outboxRepo.save(outbox);
+        } else {
+            log.info("Trade {} is invalid: {}", trade.getTradeId(), errors);
 
-                invalidTradeRepo.save(invalidTrade);
-            }
+            InvalidTradeEntity invalidTrade = InvalidTradeEntity.builder()
+                    .eventId(UUID.randomUUID())
+                    .tradeId(trade.getTradeId())
+                    .portfolioId(trade.getPortfolioId())
+                    .symbol(trade.getSymbol())
+                    .side(trade.getSide())
+                    .pricePerStock(trade.getPricePerStock())
+                    .quantity(trade.getQuantity())
+                    .tradeTimestamp(trade.getTimestamp())
+                    .sentStatus("PENDING")
+                    .validationStatus(status)
+                    .validationErrors(errors)
+                    .build();
 
-            log.info("Outbox entry inserted for trade {}", trade.getTradeId());
-
-        } catch (RuntimeException ex) {
-            log.error("Transaction failed for trade {}: {}", trade.getTradeId(), ex.getMessage());
-            throw ex; // Trigger transaction rollback
-        } catch (Exception ex) {
-            log.error("Unexpected error for trade {}: {}", trade.getTradeId(), ex.getMessage());
-            throw ex; // Do not rollback
+            invalidTradeRepo.save(invalidTrade);
         }
+
+        log.info("Outbox entry inserted for trade {}", trade.getTradeId());
+
     }
 
     public void processTrade(TradeDto trade) {
@@ -108,12 +100,18 @@ public class ValidationCore {
 
             handleTransaction(trade);
 
-        } catch(RuntimeException ex) {
-            log.error("Transaction failed in IngestionProcessor.process: {}", ex.getMessage(), ex);
-            throw new RetryableException(ex.getMessage(), ex);
+        } catch (NonRetryableException ex) {
+            log.error("Non-retryable error in processTrade for {}: {}", trade.getTradeId(), ex.getMessage(), ex);
+            throw ex; // goes straight to DLT, no retry
+        } catch (RetryableException ex) {
+            log.error("Retryable error in processTrade for {}: {}", trade.getTradeId(), ex.getMessage(), ex);
+            throw ex; // triggers @RetryableTopic retries
+        } catch (RuntimeException ex) {
+            log.error("Unexpected runtime error in processTrade for {}: {}", trade.getTradeId(), ex.getMessage(), ex);
+            throw new RetryableException("Unexpected runtime error", ex);
         } catch (Exception ex) {
-            log.error("Error in IngestionProcessor.process: {}", ex.getMessage(), ex);
-            throw new NonRetryableException(ex.getMessage(), ex);
+            log.error("Unexpected checked error in processTrade for {}: {}", trade.getTradeId(), ex.getMessage(), ex);
+            throw new RetryableException("Unexpected checked error", ex);
         }
     }
 }

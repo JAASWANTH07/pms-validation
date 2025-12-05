@@ -41,7 +41,7 @@ public class TradeValidationService {
         }
         catch (Exception ex) {
             log.error("Error during trade validation: {}", ex.getMessage());
-            throw ex;
+            throw new RuntimeException("Validation error", ex);
         }
     }
 }
