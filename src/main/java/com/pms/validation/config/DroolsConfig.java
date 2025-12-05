@@ -6,8 +6,15 @@ import org.kie.api.builder.KieFileSystem;
 import org.kie.api.builder.KieModule;
 import org.kie.api.builder.Message;
 import org.kie.api.runtime.KieContainer;
+import org.kie.api.runtime.KieSession;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import org.apache.commons.pool2.ObjectPool;
+import org.apache.commons.pool2.impl.GenericObjectPool;
+import org.apache.commons.pool2.BasePooledObjectFactory;
+import org.apache.commons.pool2.PooledObject;
+import org.apache.commons.pool2.impl.DefaultPooledObject;
 
 import java.nio.charset.StandardCharsets;
 
@@ -40,5 +47,32 @@ public class DroolsConfig {
         } catch (Exception ex) {
             throw new RuntimeException("Failed to initialize Drools rules engine: " + ex.getMessage(), ex);
         }
+    }
+
+    @Bean
+    public ObjectPool<KieSession> kieSessionPool(KieContainer kieContainer) {
+
+        return new GenericObjectPool<>(new BasePooledObjectFactory<>() {
+
+            @Override
+            public KieSession create() {
+                return kieContainer.newKieSession();
+            }
+
+            @Override
+            public PooledObject<KieSession> wrap(KieSession session) {
+                return new DefaultPooledObject<>(session);
+            }
+
+            @Override
+            public void destroyObject(PooledObject<KieSession> p) {
+                p.getObject().dispose();
+            }
+
+            @Override
+            public boolean validateObject(PooledObject<KieSession> p) {
+                return true;
+            }
+        });
     }
 }

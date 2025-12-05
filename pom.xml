@@ -154,6 +154,11 @@
         </dependency>
 
         <!-- Drools / KIE for rules engine -->
+        <dependency>
+            <groupId>org.kie</groupId>
+            <artifactId>kie-api</artifactId>
+            <version>10.1.0</version>
+        </dependency>
         <!-- https://mvnrepository.com/artifact/org.drools/drools-core -->
         <dependency>
             <groupId>org.drools</groupId>
@@ -171,6 +176,12 @@
             <groupId>org.kie</groupId>
             <artifactId>kie-ci</artifactId>
             <version>10.1.0</version>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/org.apache.commons/commons-pool2 -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-pool2</artifactId>
+            <version>2.12.1</version>
         </dependency>
     </dependencies>
     <dependencyManagement>
@@ -225,11 +236,13 @@
                 <groupId>org.xolstice.maven.plugins</groupId>
                 <artifactId>protobuf-maven-plugin</artifactId>
                 <version>0.6.1</version>
+
                 <configuration>
                     <protocArtifact>
-                        com.google.protobuf:protoc:3.24.4:exe:${os.detected.classifier}
+                        com.google.protobuf:protoc:3.21.12:exe:${os.detected.classifier}
                     </protocArtifact>
                 </configuration>
+
                 <executions>
                     <execution>
                         <goals>
@@ -238,6 +251,7 @@
                     </execution>
                 </executions>
             </plugin>
+
         </plugins>
     </build>
 

@@ -12,7 +12,6 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.stereotype.Service;
 
 import com.pms.validation.dto.TradeDto;
-import com.pms.validation.exception.NonRetryableException;
 import com.pms.validation.exception.RetryableException;
 import com.pms.validation.proto.TradeEventProto;
 import com.pms.validation.service.ValidationCore;
@@ -28,27 +27,24 @@ public class KafkaConsumerService {
     @Autowired
     private ValidationCore validationCore;
 
-    @RetryableTopic(
-            attempts = "5",
-            include = { RetryableException.class },
-            backoff = @Backoff(delay = 2000, multiplier = 2)
-    )
+    @RetryableTopic(attempts = "5", include = {
+            RetryableException.class }, backoff = @Backoff(delay = 2000, multiplier = 2))
     @KafkaListener(topics = "ingestion-topic", groupId = "${spring.kafka.consumer.group-id}", containerFactory = "jsonKafkaListenerContainerFactory")
     public void onIngestionMessage(TradeDto tradeDto,
             @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
             @Header(KafkaHeaders.OFFSET) Long offset) {
-       
-            System.out.println("From Ingestion topic consumer service:");
-            System.out.println("Received message from partition " + partition);
-            System.out.println("Offset: " + offset);
 
-            // TradeDto tradeDto = protoDTOMapper.toDto(tradeMessage);
+        System.out.println("From Ingestion topic consumer service:");
+        System.out.println("Received message from partition " + partition);
+        System.out.println("Offset: " + offset);
 
-            log.info("Processing trade {} from ingestion topic", tradeDto.getTradeId());
+        // TradeDto tradeDto = protoDTOMapper.toDto(tradeMessage);
 
-            validationCore.processTrade(tradeDto);
+        log.info("Processing trade {} from ingestion topic", tradeDto.getTradeId());
 
-            log.info("Successfully processed trade {} from ingestion topic", tradeDto.getTradeId());
+        validationCore.processTrade(tradeDto);
+
+        log.info("Successfully processed trade {} from ingestion topic", tradeDto.getTradeId());
 
     }
 
@@ -86,14 +82,12 @@ public class KafkaConsumerService {
         }
     }
 
-
     @DltHandler
     public void handleDltMessage(
             TradeEventProto dltMessage,
             @Header(KafkaHeaders.ORIGINAL_TOPIC) String originalTopic,
             @Header(KafkaHeaders.ORIGINAL_PARTITION) int partition,
-            @Header(KafkaHeaders.ORIGINAL_OFFSET) long offset
-    ) {
+            @Header(KafkaHeaders.ORIGINAL_OFFSET) long offset) {
         System.out.println("DLT MESSAGE RECEIVED");
         System.out.println("Payload: " + dltMessage);
         System.out.println("From Topic: " + originalTopic);
