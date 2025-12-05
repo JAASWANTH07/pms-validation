@@ -25,13 +25,6 @@ import com.pms.validation.proto.TradeEventProto;
 public class KafkaConfig {
 
     @Bean
-    public KafkaAdmin kafkaAdmin() {
-        Map<String, Object> configs = new HashMap<>();
-        configs.put("bootstrap.servers", "localhost:9092");
-        return new KafkaAdmin(configs);
-    }
-
-    @Bean
     public NewTopic validationTopic() {
         return TopicBuilder.name("validation-topic")
                 .partitions(5)

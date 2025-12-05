@@ -23,15 +23,17 @@ public class IdempotencyService {
     private ProcessedMessageRepository repository;
 
     @Transactional
-    public boolean markAsProcessed(UUID tradeId, String topic) {
+    public void markAsProcessed(UUID tradeId, String topic) {
         try {
             ProcessedMessage message = new ProcessedMessage(tradeId, consumerGroup, topic);
             repository.save(message);
             log.info("Marked trade " + tradeId + " as processed");
-            return true;
+        } catch (RuntimeException ex) {
+            log.warn("Trade " + tradeId + " already processed or any error occured: " + ex.getMessage());
+            throw ex;
         } catch (Exception ex) {
             log.warn("Trade " + tradeId + " already processed or constraint violation: " + ex.getMessage());
-            return false;
+            throw ex;
         }
     }
 
