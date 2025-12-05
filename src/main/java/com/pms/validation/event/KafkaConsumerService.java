@@ -1,4 +1,4 @@
-package com.pms.validation.service;
+package com.pms.validation.event;
 
 import java.util.logging.Logger;
 
@@ -15,6 +15,7 @@ import com.pms.validation.dto.TradeDto;
 import com.pms.validation.exception.NonRetryableException;
 import com.pms.validation.exception.RetryableException;
 import com.pms.validation.proto.TradeEventProto;
+import com.pms.validation.service.ValidationCore;
 
 import lombok.extern.slf4j.Slf4j;
 

@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.pms.validation.entity.InvalidTradeEntity;
+import com.pms.validation.event.KafkaProducerService;
 import com.pms.validation.repository.InvalidTradeRepository;
 
 import jakarta.transaction.Transactional;
